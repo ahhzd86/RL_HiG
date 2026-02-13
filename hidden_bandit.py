@@ -1,5 +1,3 @@
-import numpy as np
-
 def bandit(arm):
     if arm == 1:
         return np.random.normal(0.0, 1.0)
