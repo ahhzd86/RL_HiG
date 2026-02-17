@@ -1,6 +1,6 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
-from IPython.display import clear_output
+from IPython.display import clear_output, display
 
 import numpy as np
 import gymnasium as gym
@@ -120,13 +120,11 @@ class NonlinearLQREnv(gym.Env):
         return obs, float(reward), terminated, truncated, info
 
     def render(self):
-        # Lazy-create figure
-        if self._fig is None or self._ax is None:
+        # Create figure once
+        if self._fig is None:
             self._fig, self._ax = plt.subplots(2, 1, figsize=(7, 4), sharex=True)
     
-        # Clear previous frame (Colab/Jupyter-friendly)
-        clear_output(wait=True)
-    
+        # Update data
         t = np.arange(len(self._x_hist))
     
         self._ax[0].cla()
@@ -141,10 +139,14 @@ class NonlinearLQREnv(gym.Env):
         self._ax[1].grid(True)
     
         self._fig.suptitle(f"NonlinearLQREnv | t={self._t}")
-        plt.tight_layout()
-        plt.show()
+        self._fig.tight_layout()
+    
+        # Colab/Jupyter live update
+        clear_output(wait=True)
+        display(self._fig)
 
     def close(self):
 
         pass
+
 
