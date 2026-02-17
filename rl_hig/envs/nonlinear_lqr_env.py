@@ -1,4 +1,6 @@
 from __future__ import annotations
+import matplotlib.pyplot as plt
+from IPython.display import clear_output
 
 import numpy as np
 import gymnasium as gym
@@ -145,3 +147,4 @@ class NonlinearLQREnv(gym.Env):
     def close(self):
 
         pass
+
