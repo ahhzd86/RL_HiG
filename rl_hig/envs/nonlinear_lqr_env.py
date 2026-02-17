@@ -72,11 +72,19 @@ class NonlinearLQREnv(gym.Env):
         self._x: float = 0.0
         self._t: int = 0
 
+        self._x_hist = []
+        self._u_hist = []
+        
+        self._fig = None
+        self._ax = None
+
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         super().reset(seed=seed)
         self._t = 0
         self._x = float(self.np_random.uniform(self.init_low, self.init_high))
         obs = np.array([self._x], dtype=np.float32)
+        self._x_hist = [self._x]
+        self._u_hist = [0.0]
         info = {"t": self._t, "x": self._x}
         return obs, info
 
@@ -92,6 +100,8 @@ class NonlinearLQREnv(gym.Env):
         x_next = self.a * self._x + self.b * u + self.c * (self._x ** 3) + w
 
         self._x = float(np.clip(x_next, -self.x_clip, self.x_clip))
+        self._x_hist.append(self._x)
+        self._u_hist.append(u)
 
         terminated = False
         if self.termination_threshold is not None and abs(x_next) > float(self.termination_threshold):
@@ -108,7 +118,30 @@ class NonlinearLQREnv(gym.Env):
         return obs, float(reward), terminated, truncated, info
 
     def render(self):
-        print(f"t={self._t:03d}  x={self._x:+.4f}")
+        # Lazy-create figure
+        if self._fig is None or self._ax is None:
+            self._fig, self._ax = plt.subplots(2, 1, figsize=(7, 4), sharex=True)
+    
+        # Clear previous frame (Colab/Jupyter-friendly)
+        clear_output(wait=True)
+    
+        t = np.arange(len(self._x_hist))
+    
+        self._ax[0].cla()
+        self._ax[0].plot(t, self._x_hist)
+        self._ax[0].set_ylabel("state x")
+        self._ax[0].grid(True)
+    
+        self._ax[1].cla()
+        self._ax[1].plot(t, self._u_hist)
+        self._ax[1].set_ylabel("action u")
+        self._ax[1].set_xlabel("time step")
+        self._ax[1].grid(True)
+    
+        self._fig.suptitle(f"NonlinearLQREnv | t={self._t}")
+        plt.tight_layout()
+        plt.show()
 
     def close(self):
+
         pass
