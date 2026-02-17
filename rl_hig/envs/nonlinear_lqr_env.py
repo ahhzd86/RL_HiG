@@ -120,11 +120,9 @@ class NonlinearLQREnv(gym.Env):
         return obs, float(reward), terminated, truncated, info
 
     def render(self):
-        # Create figure once
         if self._fig is None:
             self._fig, self._ax = plt.subplots(2, 1, figsize=(7, 4), sharex=True)
     
-        # Update data
         t = np.arange(len(self._x_hist))
     
         self._ax[0].cla()
@@ -141,12 +139,15 @@ class NonlinearLQREnv(gym.Env):
         self._fig.suptitle(f"NonlinearLQREnv | t={self._t}")
         self._fig.tight_layout()
     
-        # Colab/Jupyter live update
         clear_output(wait=True)
         display(self._fig)
-
-    def close(self):
+    
+        # Prevent duplicate display in Colab
+        plt.close(self._fig)
+    
+        def close(self):
 
         pass
+
 
 
