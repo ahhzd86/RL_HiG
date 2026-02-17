@@ -145,9 +145,10 @@ class NonlinearLQREnv(gym.Env):
         # Prevent duplicate display in Colab
         plt.close(self._fig)
     
-        def close(self):
+    def close(self):
 
         pass
+
 
 
 
