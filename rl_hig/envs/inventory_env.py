@@ -29,6 +29,14 @@ import gymnasium as gym
 from gymnasium import spaces
 import matplotlib.pyplot as plt
 
+try:
+    from IPython.display import display, clear_output
+    _HAS_IPYTHON = True
+except Exception:
+    _HAS_IPYTHON = False
+    
+from IPython.display import display, clear_output
+
 # Notebook-safe display (works in Jupyter + Colab)
 try:
     from IPython.display import display, clear_output
@@ -177,7 +185,7 @@ class InventoryControlEnv(gym.Env):
             "t": self._t,
             "inventory": self._s,
         }
-        if self.render_mode == "human":
+        if self.render_mode in ("human", "plot"):
             self.render()
         return self._s, dict(self._last_info)
 
@@ -222,52 +230,38 @@ class InventoryControlEnv(gym.Env):
         }
         self._last_info = info
 
-        if self.render_mode == "human":
+        if self.render_mode in ("human", "plot"):
             self.render()
 
         return self._s, float(reward), terminated, truncated, dict(info)
 
 def render(self):
-    """
-    Render modes:
-      - None        → no rendering
-      - "human"     → text print
-      - "ansi"      → return string
-      - "plot"      → matplotlib graphical view
-    """
     if self.render_mode is None:
         return None
-
-    s = self._s
-    t = self._t
-    last = self._last_info or {}
-    demand = last.get("demand", None)
-    a = last.get("a", None)
 
     # -----------------------
     # TEXT MODES
     # -----------------------
-    if self.render_mode in ["human", "ansi"]:
+    if self.render_mode in ("human", "ansi"):
+        s = self._s
+        t = self._t
+        last = self._last_info or {}
+        demand = last.get("demand", None)
+        a = last.get("a", None)
 
         bar_len = 40
         filled = int(round(bar_len * (s / max(1, self.params.S_max))))
         bar = "█" * filled + "·" * (bar_len - filled)
 
-        lines = []
-        lines.append(f"InventoryControlEnv | t={t}/{self.params.max_steps}")
-        lines.append(f"Inventory: {s:>3}/{self.params.S_max} | {bar}")
+        lines = [
+            f"InventoryControlEnv | t={t}/{self.params.max_steps}",
+            f"Inventory: {s:>3}/{self.params.S_max} | {bar}",
+        ]
 
         if a is not None and demand is not None:
             lines.append(f"Last action (order): {a} | Last demand: {demand}")
-            lines.append(
-                "Costs: "
-                f"order={last.get('order_cost', 0.0):.2f}, "
-                f"hold={last.get('holding_cost', 0.0):.2f}, "
-                f"short={last.get('shortage_cost', 0.0):.2f}"
-            )
 
         out = "\n".join(lines)
-
         if self.render_mode == "ansi":
             return out
 
@@ -278,52 +272,47 @@ def render(self):
     # GRAPHICAL MODE
     # -----------------------
     if self.render_mode == "plot":
-        # Lazy-create a persistent figure/axes
         if not hasattr(self, "_fig") or self._fig is None:
-            plt.ion()  # turn on interactive mode (helps in Jupyter, harmless elsewhere)
             self._fig, self._ax = plt.subplots(figsize=(6, 4))
-    
-            # In notebooks, we want to display the figure once and keep updating it
-            self._fig_shown = False
 
         self._ax.clear()
-    
+
         s = self._s
         t = self._t
         last = self._last_info or {}
         demand = last.get("demand", None)
         a = last.get("a", None)
-    
-        # Plot: inventory as a bar
+
         self._ax.bar(["Inventory"], [s])
         self._ax.set_ylim(0, self.params.S_max + 10)
         self._ax.set_title(f"Inventory Level (t={t}/{self.params.max_steps})")
         self._ax.set_ylabel("Units")
-    
-        # Annotate last action / demand
+
         y_text = min(self.params.S_max + 8, s + 2)
         if a is not None:
             self._ax.text(0, y_text, f"Order: {a}", ha="center")
             y_text += 2
         if demand is not None:
             self._ax.text(0, y_text, f"Demand: {demand}", ha="center")
-    
-        # Force draw/update
-        self._fig.canvas.draw_idle()
-    
-        # If we're in IPython (Jupyter/Colab), explicitly display and refresh output
+
+        self._fig.tight_layout()
+
         if _HAS_IPYTHON:
             clear_output(wait=True)
             display(self._fig)
         else:
-            # Non-notebook: rely on interactive matplotlib window
             plt.pause(0.01)
-    
+
         return None
-    def close(self):
-        if hasattr(self, "_fig") and self._fig is not None:
-            plt.close(self._fig)
-            self._fig = None
-            self._ax = None
-        return
+
+    return None
+
+
+def close(self):
+    # IMPORTANT: this must NOT be inside render()
+    if hasattr(self, "_fig") and self._fig is not None:
+        plt.close(self._fig)
+        self._fig = None
+        self._ax = None
+
 
