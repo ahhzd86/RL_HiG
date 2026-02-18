@@ -10,3 +10,6 @@ Includes:
 
 \- Nonlinear LQR Gym environment
 
+\- Inventory control Gym environment
+
+
