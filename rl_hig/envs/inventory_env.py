@@ -280,11 +280,11 @@ def render(self):
     if self.render_mode == "plot":
         # Lazy-create a persistent figure/axes
         if not hasattr(self, "_fig") or self._fig is None:
-        plt.ion()  # turn on interactive mode (helps in Jupyter, harmless elsewhere)
-        self._fig, self._ax = plt.subplots(figsize=(6, 4))
-
-        # In notebooks, we want to display the figure once and keep updating it
-        self._fig_shown = False
+            plt.ion()  # turn on interactive mode (helps in Jupyter, harmless elsewhere)
+            self._fig, self._ax = plt.subplots(figsize=(6, 4))
+    
+            # In notebooks, we want to display the figure once and keep updating it
+            self._fig_shown = False
 
         self._ax.clear()
     
@@ -326,3 +326,4 @@ def render(self):
             self._fig = None
             self._ax = None
         return
+
