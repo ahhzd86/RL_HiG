@@ -239,41 +239,12 @@ def render(self):
     if self.render_mode is None:
         return None
 
-    # -----------------------
-    # TEXT MODES
-    # -----------------------
-    if self.render_mode in ("human", "ansi"):
-        s = self._s
-        t = self._t
-        last = self._last_info or {}
-        demand = last.get("demand", None)
-        a = last.get("a", None)
-
-        bar_len = 40
-        filled = int(round(bar_len * (s / max(1, self.params.S_max))))
-        bar = "█" * filled + "·" * (bar_len - filled)
-
-        lines = [
-            f"InventoryControlEnv | t={t}/{self.params.max_steps}",
-            f"Inventory: {s:>3}/{self.params.S_max} | {bar}",
-        ]
-
-        if a is not None and demand is not None:
-            lines.append(f"Last action (order): {a} | Last demand: {demand}")
-
-        out = "\n".join(lines)
-        if self.render_mode == "ansi":
-            return out
-
-        print(out)
-        return None
-
-    # -----------------------
-    # GRAPHICAL MODE
-    # -----------------------
     if self.render_mode == "plot":
+        # Lazy-create figure
         if not hasattr(self, "_fig") or self._fig is None:
-            self._fig, self._ax = plt.subplots(figsize=(6, 4))
+            import matplotlib.pyplot as plt
+            self._plt = plt
+            self._fig, self._ax = self._plt.subplots(figsize=(6, 4))
 
         self._ax.clear()
 
@@ -288,31 +259,44 @@ def render(self):
         self._ax.set_title(f"Inventory Level (t={t}/{self.params.max_steps})")
         self._ax.set_ylabel("Units")
 
-        y_text = min(self.params.S_max + 8, s + 2)
+        y = min(self.params.S_max + 8, s + 2)
         if a is not None:
-            self._ax.text(0, y_text, f"Order: {a}", ha="center")
-            y_text += 2
+            self._ax.text(0, y, f"Order: {a}", ha="center")
+            y += 2
         if demand is not None:
-            self._ax.text(0, y_text, f"Demand: {demand}", ha="center")
+            self._ax.text(0, y, f"Demand: {demand}", ha="center")
 
         self._fig.tight_layout()
 
-        if _HAS_IPYTHON:
+        # Notebook-friendly update
+        try:
+            from IPython.display import display, clear_output
             clear_output(wait=True)
             display(self._fig)
-        else:
-            plt.pause(0.01)
+        except Exception:
+            self._plt.pause(0.01)
 
+        return None
+
+    # fallback to text for "human"/"ansi"
+    if self.render_mode in ("human", "ansi"):
+        s = self._s
+        t = self._t
+        out = f"InventoryControlEnv | t={t}/{self.params.max_steps} | Inventory={s}/{self.params.S_max}"
+        if self.render_mode == "ansi":
+            return out
+        print(out)
         return None
 
     return None
 
 
 def close(self):
-    # IMPORTANT: this must NOT be inside render()
     if hasattr(self, "_fig") and self._fig is not None:
-        plt.close(self._fig)
+        self._plt.close(self._fig)
         self._fig = None
         self._ax = None
+
+
 
 
