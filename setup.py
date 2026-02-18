@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rl_hig",
-    version="0.0.5",
+    version="0.0.6",
     description="Teaching library for RL (bandits + custom Gymnasium envs).",
     packages=find_packages(),
     py_modules=["hidden_bandit"],
@@ -11,4 +11,5 @@ setup(
         "gymnasium>=0.29",
     ],
     python_requires=">=3.9",
+
 )
